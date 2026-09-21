@@ -19,6 +19,8 @@
 #include <Windows.h>
 #elif defined(__ANDROID__)
 #include "android/native_window.h"
+#elif defined(__SWITCH__)
+struct NWindow;
 #elif defined(__linux__) && !defined(PLUME_SDL_VULKAN_ENABLED)
 #include "X11/Xlib.h"
 #undef None
@@ -39,6 +41,8 @@ namespace plume {
     typedef HWND RenderWindow;
 #elif defined(__ANDROID__)
     typedef ANativeWindow* RenderWindow;
+#elif defined(__SWITCH__)
+    typedef ::NWindow* RenderWindow;
 #elif defined(PLUME_SDL_VULKAN_ENABLED)
     typedef SDL_Window *RenderWindow;
 #elif defined(__linux__)

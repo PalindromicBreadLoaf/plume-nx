@@ -18,6 +18,8 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #elif defined(__ANDROID__)
 #define VK_USE_PLATFORM_ANDROID_KHR
+#elif defined(__SWITCH__)
+#define VK_USE_PLATFORM_VI_NN
 #elif defined(__linux__) && !defined(PLUME_SDL_VULKAN_ENABLED)
 #define VK_USE_PLATFORM_XLIB_KHR
 #elif defined(__APPLE__)

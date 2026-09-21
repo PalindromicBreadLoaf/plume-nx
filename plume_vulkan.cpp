@@ -19,6 +19,12 @@
 #   include "render/plume_dlss.h"
 #endif
 
+#if defined(__SWITCH__)
+#   include <switch.h>
+
+extern "C" VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(VkInstance instance, const char *pName);
+#endif
+
 #ifndef NDEBUG
 #   define VULKAN_VALIDATION_LAYER_ENABLED
 #   define VULKAN_OBJECT_NAMES_ENABLED
@@ -52,6 +58,8 @@ namespace plume {
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #   elif defined(__ANDROID__)
         VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+#   elif defined(__SWITCH__)
+        VK_NN_VI_SURFACE_EXTENSION_NAME,
 #   elif defined(__linux__)
 #   if !defined(PLUME_SDL_VULKAN_ENABLED)
         VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
@@ -2114,6 +2122,18 @@ namespace plume {
             fprintf(stderr, "vkCreateAndroidSurfaceKHR failed with error code 0x%X.\n", res);
             return;
         }
+#   elif defined(__SWITCH__)
+        assert(desc.renderWindow != nullptr);
+        VkViSurfaceCreateInfoNN surfaceCreateInfo = {};
+        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_VI_SURFACE_CREATE_INFO_NN;
+        surfaceCreateInfo.window = desc.renderWindow;
+
+        VulkanInterface *renderInterface = commandQueue->device->renderInterface;
+        res = vkCreateViSurfaceNN(renderInterface->instance, &surfaceCreateInfo, nullptr, &surface);
+        if (res != VK_SUCCESS) {
+            fprintf(stderr, "vkCreateViSurfaceNN failed with error code 0x%X.\n", res);
+            return;
+        }
 #   elif defined(__linux__)
         assert(desc.renderWindow.display != 0);
         assert(desc.renderWindow.window != 0);
@@ -2462,6 +2482,15 @@ namespace plume {
 #   elif defined(__ANDROID__)
         dstWidth = ANativeWindow_getWidth(desc.renderWindow);
         dstHeight = ANativeWindow_getHeight(desc.renderWindow);
+#   elif defined(__SWITCH__)
+        if (appletGetOperationMode() == AppletOperationMode_Console) {
+            dstWidth = 1920;
+            dstHeight = 1080;
+        }
+        else {
+            dstWidth = 1280;
+            dstHeight = 720;
+        }
 #   elif defined(__linux__)
         XWindowAttributes attributes;
         XGetWindowAttributes(desc.renderWindow.display, desc.renderWindow.window, &attributes);
@@ -4458,11 +4487,17 @@ namespace plume {
 #else
     VulkanInterface::VulkanInterface() {
 #endif
-        VkResult res = volkInitialize();
+        VkResult res = VK_SUCCESS;
+#   if defined(__SWITCH__)
+        setenv("NVK_I_WANT_A_BROKEN_VULKAN_DRIVER", "1", 1);
+        volkInitializeCustom(reinterpret_cast<PFN_vkGetInstanceProcAddr>(vk_icdGetInstanceProcAddr));
+#   else
+        res = volkInitialize();
         if (res != VK_SUCCESS) {
             fprintf(stderr, "volkInitialize failed with error code 0x%X.\n", res);
             return;
         }
+#   endif
 
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "plume";
