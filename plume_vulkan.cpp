@@ -3871,7 +3871,12 @@ namespace plume {
 
         VkPhysicalDevicePresentIdFeaturesKHR presentIdFeatures = {};
         VkPhysicalDevicePresentWaitFeaturesKHR presentWaitFeatures = {};
+#   if defined(__SWITCH__)
+        // NVK advertises present wait, but the Horizon WSI has no wait_for_present hook, so vkWaitForPresentKHR jumps to null.
+        const bool presentWaitFound = false;
+#   else
         const bool presentWaitFound = supportedOptionalExtensions.find(VK_KHR_PRESENT_ID_EXTENSION_NAME) != supportedOptionalExtensions.end() && supportedOptionalExtensions.find(VK_KHR_PRESENT_WAIT_EXTENSION_NAME) != supportedOptionalExtensions.end();
+#   endif
         if (presentWaitFound) {
             presentIdFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR;
             presentIdFeatures.pNext = featuresChain;
